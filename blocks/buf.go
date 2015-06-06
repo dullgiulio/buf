@@ -24,14 +24,26 @@ func (b *Buffer) Len() int {
 
 func (b *Buffer) Write(p []byte) (n int, err error) {
 	offset := b.size % blocksize
-	for i := range p {
+	lastblock := len(b.blocks) - 1
+
+	for {
 		if offset == 0 || offset >= blocksize {
 			var block [blocksize]byte
 			b.blocks = append(b.blocks, block)
 			offset = 0
+			lastblock = lastblock + 1
 		}
-		b.blocks[len(b.blocks)-1][offset] = p[i]
-		offset = offset + 1
+		nwrite := len(p) - n
+		if nwrite > blocksize {
+			nwrite = blocksize
+		}
+		for ; n < nwrite; n++ {
+			b.blocks[lastblock][offset] = p[n]
+			offset = offset + 1
+		}
+		if n >= len(p) {
+			break
+		}
 	}
 	b.size = b.size + len(p)
 	return len(p), nil
